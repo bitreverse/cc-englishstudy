@@ -8,7 +8,8 @@
     ]
   },
   "enabledMcpjsonServers": [
-    "playwright"
+    "playwright",
+    "context7"
   ],
   "enableAllProjectMcpServers": true
 }
