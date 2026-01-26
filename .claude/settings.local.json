@@ -4,13 +4,14 @@
       "WebSearch",
       "Bash",
       "WebFetch",
-      "mcp__playwright"
+      "mcp__playwright",
+      "mcp__sequential-thinking",
+      "mcp__shadcn"
     ]
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
-    "playwright",
-    "context7"
-  ],
-  "enableAllProjectMcpServers": true
+    "playwright"
+  ]
 }
   
