@@ -1,8 +1,10 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Play, Pause } from 'lucide-react';
+import { Play, Pause, Volume2 } from 'lucide-react';
 import { useSpeech } from '@/hooks/useSpeech';
+import { isSpeechSupported } from '@/lib/speech';
 
 /**
  * PlayButton Props
@@ -41,6 +43,12 @@ interface PlayButtonProps {
  */
 export function PlayButton({ text, audioUrl, onPlay }: PlayButtonProps) {
   const { isPlaying, play } = useSpeech();
+  const [isSupported, setIsSupported] = useState(true);
+
+  // 클라이언트에서 TTS 지원 여부 체크
+  useEffect(() => {
+    setIsSupported(isSpeechSupported());
+  }, []);
 
   const handleClick = () => {
     // 콜백 실행
@@ -52,14 +60,21 @@ export function PlayButton({ text, audioUrl, onPlay }: PlayButtonProps) {
     play(text, audioUrl);
   };
 
+  // 오디오 URL이 없고 TTS도 미지원이면 버튼 비활성화
+  const isDisabled = !audioUrl && !isSupported;
+
   return (
     <Button
       variant="outline"
       size="icon"
       onClick={handleClick}
       aria-label={isPlaying ? '재생 중' : '음성 재생'}
+      disabled={isDisabled}
+      title={isDisabled ? '이 브라우저는 음성 재생을 지원하지 않습니다' : undefined}
     >
-      {isPlaying ? (
+      {isDisabled ? (
+        <Volume2 className="h-4 w-4" />
+      ) : isPlaying ? (
         <Pause className="h-4 w-4" />
       ) : (
         <Play className="h-4 w-4" />

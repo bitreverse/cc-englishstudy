@@ -1,16 +1,11 @@
 import { Metadata } from 'next';
+import { Suspense } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { SearchInput } from '@/components/SearchInput';
-import { PlayButton } from '@/components/PlayButton';
-import { ErrorMessage } from '@/components/ErrorMessage';
-import { ExampleItem } from '@/components/ExampleItem';
-import { SearchTracker } from '@/components/SearchTracker';
 import { RecentSearches } from '@/components/RecentSearches';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { convertToWordData } from '@/lib/mock-data';
-import { searchWord } from '@/lib/api';
-import { ERROR_MESSAGES } from '@/lib/constants';
+import { SearchResult } from '@/components/SearchResult';
+import { SearchResultSkeleton } from '@/components/SearchResultSkeleton';
 
 /**
  * 페이지 Props 타입
@@ -48,18 +43,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function SearchResultPage({ params }: Props) {
   const { word } = await params;
 
-  // Free Dictionary API 호출
-  const response = await searchWord(word);
-  const wordData = response ? convertToWordData(response) : null;
-
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="container mx-auto flex-1 py-8 px-4">
-        {/* 검색 성공 시 검색 기록에 추가 */}
-        {wordData && <SearchTracker word={word} />}
-
-        {/* 검색 입력창 */}
+        {/* 검색 입력창 - 즉시 렌더링 */}
         <div className="mb-6">
           <SearchInput defaultValue={word} />
         </div>
@@ -70,56 +58,11 @@ export default async function SearchResultPage({ params }: Props) {
             <RecentSearches currentWord={word} />
           </aside>
 
-          {/* 메인: 검색 결과 */}
+          {/* 메인: 검색 결과 - Suspense로 래핑 */}
           <div className="lg:col-span-3">
-            {!wordData ? (
-              <ErrorMessage message={ERROR_MESSAGES.WORD_NOT_FOUND} />
-            ) : (
-              <div className="space-y-6">
-                {/* 단어 정보 카드 */}
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-3xl">{wordData.word}</CardTitle>
-                      <PlayButton
-                        text={wordData.word}
-                        audioUrl={response?.[0]?.phonetics?.[0]?.audio}
-                      />
-                    </div>
-                    {wordData.phonetic && (
-                      <p className="text-muted-foreground">{wordData.phonetic}</p>
-                    )}
-                  </CardHeader>
-                </Card>
-
-                {/* 품사별 정의 목록 */}
-                {wordData.meanings.map((meaning, idx) => (
-                  <Card key={idx}>
-                    <CardHeader>
-                      <CardTitle className="text-xl capitalize">
-                        {meaning.partOfSpeech}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ol className="list-decimal list-inside space-y-3">
-                        {meaning.definitions.map((def, defIdx) => (
-                          <li key={defIdx} className="space-y-1">
-                            <p>{def.definition}</p>
-                            {def.example ? (
-                              <ExampleItem example={def.example} />
-                            ) : (
-                              <p className="text-sm text-muted-foreground ml-5">
-                                예문 없음
-                              </p>
-                            )}
-                          </li>
-                        ))}
-                      </ol>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+            <Suspense fallback={<SearchResultSkeleton />}>
+              <SearchResult word={word} />
+            </Suspense>
           </div>
         </div>
       </main>

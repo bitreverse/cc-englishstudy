@@ -85,3 +85,12 @@ export interface RecentSearch {
   /** 검색 시간 (Unix timestamp) */
   timestamp: number;
 }
+
+/**
+ * API 검색 결과 타입 (Discriminated Union)
+ *
+ * 성공과 실패를 명확히 구분하여 타입 안정성을 제공합니다.
+ */
+export type SearchResult =
+  | { success: true; data: DictionaryResponse[] }
+  | { success: false; error: 'NOT_FOUND' | 'NETWORK_ERROR' };

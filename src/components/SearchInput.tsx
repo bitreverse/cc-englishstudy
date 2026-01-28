@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ERROR_MESSAGES } from '@/lib/constants';
@@ -45,6 +46,7 @@ export function SearchInput({
   const router = useRouter();
   const [value, setValue] = useState(defaultValue);
   const [error, setError] = useState('');
+  const [isPending, startTransition] = useTransition();
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -67,7 +69,10 @@ export function SearchInput({
     if (onSearch) {
       onSearch(trimmed);
     } else {
-      router.push(`/search/${encodeURIComponent(trimmed)}`);
+      // useTransition으로 페이지 이동 래핑
+      startTransition(() => {
+        router.push(`/search/${encodeURIComponent(trimmed)}`);
+      });
     }
   };
 
@@ -85,8 +90,18 @@ export function SearchInput({
           placeholder="영어 단어를 입력하세요"
           autoFocus={autoFocus}
           className="flex-1"
+          disabled={isPending}
         />
-        <Button type="submit">검색</Button>
+        <Button type="submit" disabled={isPending}>
+          {isPending ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              검색 중
+            </>
+          ) : (
+            '검색'
+          )}
+        </Button>
       </div>
       {error && <p className="text-sm text-destructive mt-2">{error}</p>}
     </form>

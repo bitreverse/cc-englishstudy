@@ -1,27 +1,27 @@
-import type { DictionaryResponse } from '@/types';
+import type { DictionaryResponse, SearchResult } from '@/types';
 import { API_BASE_URL } from './constants';
 
 /**
  * Free Dictionary API로 단어 검색
  *
  * @param word - 검색할 영어 단어
- * @returns API 응답 데이터 배열 또는 null (단어 미발견 또는 네트워크 오류 시)
+ * @returns 검색 결과 (성공/실패 구분)
  *
  * @example
  * ```typescript
  * const result = await searchWord('hello');
- * if (result) {
- *   console.log(result[0].word); // 'hello'
+ * if (result.success) {
+ *   console.log(result.data[0].word); // 'hello'
+ * } else if (result.error === 'NOT_FOUND') {
+ *   console.log('단어를 찾을 수 없습니다');
  * } else {
- *   console.log('단어를 찾을 수 없거나 오류가 발생했습니다');
+ *   console.log('네트워크 오류가 발생했습니다');
  * }
  * ```
  *
  * @see https://dictionaryapi.dev/
  */
-export async function searchWord(
-  word: string
-): Promise<DictionaryResponse[] | null> {
+export async function searchWord(word: string): Promise<SearchResult> {
   try {
     const url = `${API_BASE_URL}/${encodeURIComponent(word.toLowerCase())}`;
     const response = await fetch(url, {
@@ -29,7 +29,7 @@ export async function searchWord(
     });
 
     if (response.status === 404) {
-      return null; // 단어 미발견
+      return { success: false, error: 'NOT_FOUND' };
     }
 
     if (!response.ok) {
@@ -37,9 +37,9 @@ export async function searchWord(
     }
 
     const data = await response.json();
-    return data as DictionaryResponse[];
+    return { success: true, data: data as DictionaryResponse[] };
   } catch (error) {
     console.error('Search error:', error);
-    return null; // 네트워크 오류 시 null 반환
+    return { success: false, error: 'NETWORK_ERROR' };
   }
 }

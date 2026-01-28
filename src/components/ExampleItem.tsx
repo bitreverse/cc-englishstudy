@@ -1,8 +1,10 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useSpeech } from '@/hooks/useSpeech';
 import { Button } from '@/components/ui/button';
-import { Play, Pause } from 'lucide-react';
+import { Play, Pause, Volume2 } from 'lucide-react';
+import { isSpeechSupported } from '@/lib/speech';
 
 /**
  * ExampleItem Props
@@ -26,10 +28,19 @@ interface ExampleItemProps {
  */
 export function ExampleItem({ example }: ExampleItemProps) {
   const { isPlaying, play } = useSpeech();
+  const [isSupported, setIsSupported] = useState(true);
+
+  // 클라이언트에서 TTS 지원 여부 체크
+  useEffect(() => {
+    setIsSupported(isSpeechSupported());
+  }, []);
 
   const handlePlay = () => {
     play(example);
   };
+
+  // TTS 미지원이면 버튼 비활성화
+  const isDisabled = !isSupported;
 
   return (
     <div className="flex items-start gap-2 mt-1">
@@ -39,8 +50,12 @@ export function ExampleItem({ example }: ExampleItemProps) {
         onClick={handlePlay}
         className="h-6 w-6 p-0 mt-0.5"
         aria-label="예문 재생"
+        disabled={isDisabled}
+        title={isDisabled ? '이 브라우저는 음성 재생을 지원하지 않습니다' : undefined}
       >
-        {isPlaying ? (
+        {isDisabled ? (
+          <Volume2 className="h-3 w-3" />
+        ) : isPlaying ? (
           <Pause className="h-3 w-3" />
         ) : (
           <Play className="h-3 w-3" />
