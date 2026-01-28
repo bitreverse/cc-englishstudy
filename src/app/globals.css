@@ -115,11 +115,51 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+@layer utilities {
+  /* 스크린 리더 전용 텍스트 */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* 포커스 시에만 표시 */
+  .sr-only-focusable:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 0.25rem;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* 포커스 스타일 개선 */
+  *:focus-visible {
+    outline: 2px solid;
+    outline-offset: 2px;
+  }
+
+  /* 키보드 네비게이션 강조 */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible {
+    @apply ring-2 ring-primary ring-offset-2;
   }
 }

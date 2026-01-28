@@ -27,69 +27,73 @@ export async function SearchResult({ word }: SearchResultProps) {
   // Free Dictionary API 호출
   const result = await searchWord(word);
 
-  // 검색 성공 시 데이터 변환
-  const wordData = result.success ? convertToWordData(result.data) : null;
-
-  // 에러 메시지 결정
-  const errorMessage = !result.success
-    ? result.error === 'NOT_FOUND'
+  // 에러 처리 (early return)
+  if (!result.success) {
+    const errorMessage = result.error === 'NOT_FOUND'
       ? ERROR_MESSAGES.WORD_NOT_FOUND
-      : '오류가 발생했습니다. 다시 시도해주세요.'
-    : null;
+      : '오류가 발생했습니다. 다시 시도해주세요.';
+    return <ErrorMessage message={errorMessage} />;
+  }
+
+  // 이제 result.data가 타입 안전하게 접근 가능
+  const wordData = convertToWordData(result.data);
+
+  // 데이터 변환 실패 시 에러 처리
+  if (!wordData) {
+    return <ErrorMessage message="데이터를 처리할 수 없습니다." />;
+  }
+
+  const audioUrl = result.data[0]?.phonetics?.[0]?.audio;
 
   return (
     <>
       {/* 검색 성공 시 검색 기록에 추가 */}
-      {wordData && <SearchTracker word={word} />}
+      <SearchTracker word={word} />
 
-      {!wordData ? (
-        <ErrorMessage message={errorMessage!} />
-      ) : (
-        <div className="space-y-6">
-          {/* 단어 정보 카드 */}
-          <Card>
+      <div className="space-y-6">
+        {/* 단어 정보 카드 */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-3xl">{wordData.word}</CardTitle>
+              <PlayButton
+                text={wordData.word}
+                audioUrl={audioUrl}
+              />
+            </div>
+            {wordData.phonetic && (
+              <p className="text-muted-foreground">{wordData.phonetic}</p>
+            )}
+          </CardHeader>
+        </Card>
+
+        {/* 품사별 정의 목록 */}
+        {wordData.meanings.map((meaning, idx) => (
+          <Card key={idx}>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-3xl">{wordData.word}</CardTitle>
-                <PlayButton
-                  text={wordData.word}
-                  audioUrl={result.data[0]?.phonetics?.[0]?.audio}
-                />
-              </div>
-              {wordData.phonetic && (
-                <p className="text-muted-foreground">{wordData.phonetic}</p>
-              )}
+              <CardTitle className="text-xl capitalize">
+                {meaning.partOfSpeech}
+              </CardTitle>
             </CardHeader>
+            <CardContent>
+              <ol className="list-decimal list-inside space-y-3">
+                {meaning.definitions.map((def, defIdx) => (
+                  <li key={defIdx} className="space-y-1">
+                    <p>{def.definition}</p>
+                    {def.example ? (
+                      <ExampleItem example={def.example} />
+                    ) : (
+                      <p className="text-sm text-muted-foreground ml-5">
+                        예문 없음
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </CardContent>
           </Card>
-
-          {/* 품사별 정의 목록 */}
-          {wordData.meanings.map((meaning, idx) => (
-            <Card key={idx}>
-              <CardHeader>
-                <CardTitle className="text-xl capitalize">
-                  {meaning.partOfSpeech}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ol className="list-decimal list-inside space-y-3">
-                  {meaning.definitions.map((def, defIdx) => (
-                    <li key={defIdx} className="space-y-1">
-                      <p>{def.definition}</p>
-                      {def.example ? (
-                        <ExampleItem example={def.example} />
-                      ) : (
-                        <p className="text-sm text-muted-foreground ml-5">
-                          예문 없음
-                        </p>
-                      )}
-                    </li>
-                  ))}
-                </ol>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+        ))}
+      </div>
     </>
   );
 }

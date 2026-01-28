@@ -14,7 +14,9 @@
       "mcp__shrimp-task-manager__analyze_task",
       "mcp__shrimp-task-manager__reflect_task",
       "mcp__shrimp-task-manager__split_tasks",
-      "mcp__shrimp-task-manager__list_tasks"
+      "mcp__shrimp-task-manager__list_tasks",
+      "mcp__context7__query-docs",
+      "mcp__shrimp-task-manager__get_task_detail"
     ]
   },
   "enableAllProjectMcpServers": true,

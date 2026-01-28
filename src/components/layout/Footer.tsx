@@ -6,7 +6,7 @@
  */
 export function Footer() {
   return (
-    <footer className="border-t mt-auto">
+    <footer role="contentinfo" className="border-t mt-auto">
       <div className="container mx-auto py-4 px-4 text-center text-muted-foreground">
         <p>&copy; 2026 영어 단어 학습 사전</p>
       </div>

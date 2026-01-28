@@ -1,0 +1,28 @@
+
+> cc-englishstudy@0.1.0 build
+> next build --turbopack
+
+▲ Next.js 16.1.5 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 12.2s
+  Running TypeScript ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/6) ...
+  Generating static pages using 7 workers (1/6) 
+  Generating static pages using 7 workers (2/6) 
+  Generating static pages using 7 workers (4/6) 
+✓ Generating static pages using 7 workers (6/6) in 546.3ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /robots.txt
+├ ƒ /search/[word]
+└ ○ /sitemap.xml
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

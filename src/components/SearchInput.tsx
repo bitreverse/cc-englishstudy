@@ -77,9 +77,13 @@ export function SearchInput({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full">
-      <div className="flex gap-2">
+    <form onSubmit={handleSubmit} className="w-full" role="search">
+      <label htmlFor="word-search" className="sr-only">
+        검색할 영어 단어
+      </label>
+      <div className="flex flex-col sm:flex-row gap-2">
         <Input
+          id="word-search"
           type="text"
           value={value}
           onChange={(e) => {
@@ -89,10 +93,12 @@ export function SearchInput({
           }}
           placeholder="영어 단어를 입력하세요"
           autoFocus={autoFocus}
-          className="flex-1"
+          className="flex-1 text-base"
           disabled={isPending}
+          aria-invalid={!!error}
+          aria-describedby={error ? 'search-error' : undefined}
         />
-        <Button type="submit" disabled={isPending}>
+        <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
           {isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -103,7 +109,15 @@ export function SearchInput({
           )}
         </Button>
       </div>
-      {error && <p className="text-sm text-destructive mt-2">{error}</p>}
+      {error && (
+        <p id="search-error" className="text-sm text-destructive mt-2" role="alert">
+          {error}
+        </p>
+      )}
+      {/* 스크린 리더 상태 알림 */}
+      <div role="status" aria-live="polite" className="sr-only">
+        {isPending && '검색 중입니다'}
+      </div>
     </form>
   );
 }

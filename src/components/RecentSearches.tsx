@@ -35,29 +35,35 @@ export function RecentSearches({ currentWord }: RecentSearchesProps) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">최근 검색</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ul className="space-y-2">
-          {searches.map((item) => (
-            <li key={item.word}>
-              <Link
-                href={`/search/${item.word}`}
-                className={cn(
-                  'text-sm hover:underline',
-                  item.word === currentWord
-                    ? 'font-bold'
-                    : 'text-muted-foreground'
-                )}
-              >
-                {item.word}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
+    <section aria-label="최근 검색 기록">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base sm:text-lg">최근 검색</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <nav aria-label="최근 검색한 단어 목록">
+            <ul className="space-y-1.5 sm:space-y-2">
+              {searches.map((item) => (
+                <li key={item.word}>
+                  <Link
+                    href={`/search/${item.word}`}
+                    className={cn(
+                      'text-sm hover:underline block py-1',
+                      item.word === currentWord
+                        ? 'font-bold'
+                        : 'text-muted-foreground'
+                    )}
+                    aria-label={`${item.word} 검색 결과 보기`}
+                    aria-current={item.word === currentWord ? 'page' : undefined}
+                  >
+                    {item.word}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </CardContent>
+      </Card>
+    </section>
   );
 }

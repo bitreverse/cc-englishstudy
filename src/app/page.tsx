@@ -26,14 +26,16 @@ export default function Home() {
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="container mx-auto flex-1 py-8 px-4">
-        <div className="max-w-2xl mx-auto">
-          <h2 className="text-4xl font-bold mb-4 text-center">영어 단어 검색</h2>
-          <p className="text-muted-foreground mb-8 text-center">
+        <div className="max-w-full sm:max-w-xl md:max-w-2xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-center">
+            영어 단어 검색
+          </h2>
+          <p className="text-sm sm:text-base text-muted-foreground mb-8 text-center">
             검색할 영어 단어를 입력하세요
           </p>
           <SearchInput autoFocus />
 
-          <div className="mt-8">
+          <div className="mt-6 sm:mt-8">
             <RecentSearches />
           </div>
         </div>
