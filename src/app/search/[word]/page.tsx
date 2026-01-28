@@ -5,11 +5,12 @@ import { SearchInput } from '@/components/SearchInput';
 import { PlayButton } from '@/components/PlayButton';
 import { ErrorMessage } from '@/components/ErrorMessage';
 import { ExampleItem } from '@/components/ExampleItem';
+import { SearchTracker } from '@/components/SearchTracker';
+import { RecentSearches } from '@/components/RecentSearches';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MOCK_RECENT_SEARCHES, convertToWordData } from '@/lib/mock-data';
+import { convertToWordData } from '@/lib/mock-data';
 import { searchWord } from '@/lib/api';
 import { ERROR_MESSAGES } from '@/lib/constants';
-import { cn } from '@/lib/utils';
 
 /**
  * 페이지 Props 타입
@@ -55,6 +56,9 @@ export default async function SearchResultPage({ params }: Props) {
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="container mx-auto flex-1 py-8 px-4">
+        {/* 검색 성공 시 검색 기록에 추가 */}
+        {wordData && <SearchTracker word={word} />}
+
         {/* 검색 입력창 */}
         <div className="mb-6">
           <SearchInput defaultValue={word} />
@@ -63,30 +67,7 @@ export default async function SearchResultPage({ params }: Props) {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* 사이드바: 최근 검색 (데스크톱에서만 표시) */}
           <aside className="hidden lg:block">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">최근 검색</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {MOCK_RECENT_SEARCHES.map((item) => (
-                    <li key={item.word}>
-                      <a
-                        href={`/search/${item.word}`}
-                        className={cn(
-                          'text-sm hover:underline',
-                          item.word === word
-                            ? 'font-bold'
-                            : 'text-muted-foreground'
-                        )}
-                      >
-                        {item.word}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
+            <RecentSearches currentWord={word} />
           </aside>
 
           {/* 메인: 검색 결과 */}
@@ -102,7 +83,7 @@ export default async function SearchResultPage({ params }: Props) {
                       <CardTitle className="text-3xl">{wordData.word}</CardTitle>
                       <PlayButton
                         text={wordData.word}
-                        audioUrl={response[0].phonetics[0]?.audio}
+                        audioUrl={response?.[0]?.phonetics?.[0]?.audio}
                       />
                     </div>
                     {wordData.phonetic && (

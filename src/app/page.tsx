@@ -2,8 +2,7 @@ import { Metadata } from 'next';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { SearchInput } from '@/components/SearchInput';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MOCK_RECENT_SEARCHES } from '@/lib/mock-data';
+import { RecentSearches } from '@/components/RecentSearches';
 
 /**
  * 홈페이지 메타데이터
@@ -34,27 +33,9 @@ export default function Home() {
           </p>
           <SearchInput autoFocus />
 
-          {MOCK_RECENT_SEARCHES.length > 0 && (
-            <Card className="mt-8">
-              <CardHeader>
-                <CardTitle>최근 검색</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {MOCK_RECENT_SEARCHES.map((item) => (
-                    <li key={item.word}>
-                      <a
-                        href={`/search/${item.word}`}
-                        className="text-primary hover:underline"
-                      >
-                        {item.word}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
+          <div className="mt-8">
+            <RecentSearches />
+          </div>
         </div>
       </main>
       <Footer />
