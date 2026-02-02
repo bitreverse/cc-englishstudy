@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Test files
+    "test-*.js",
+    // Playwright MCP
+    ".playwright-mcp/**",
+    // Shrimp data
+    "shrimp_data/**",
   ]),
 ]);
 

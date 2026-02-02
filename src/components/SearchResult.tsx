@@ -1,11 +1,9 @@
-import { PlayButton } from '@/components/PlayButton';
 import { ErrorMessage } from '@/components/ErrorMessage';
-import { ExampleItem } from '@/components/ExampleItem';
 import { SearchTracker } from '@/components/SearchTracker';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { convertToWordData } from '@/lib/mock-data';
+import { WordSearchResult } from '@/components/word/WordSearchResult';
 import { searchWord } from '@/lib/api';
 import { ERROR_MESSAGES } from '@/lib/constants';
+import type { WordAnalysisResponse, Phonetic, Meaning } from '@/types';
 
 /**
  * SearchResult Props
@@ -13,6 +11,56 @@ import { ERROR_MESSAGES } from '@/lib/constants';
 interface SearchResultProps {
   /** 검색할 단어 */
   word: string;
+}
+
+/**
+ * IPA 표기를 정규화하는 헬퍼 함수
+ *
+ * 슬래시, 공백, 특수 기호를 제거하여 비교 가능한 형태로 변환합니다.
+ *
+ * @param ipa - IPA 표기 (예: "/pərˈmɪt/" 또는 "pərˈmɪt")
+ * @returns 정규화된 IPA (예: "pərmɪt")
+ */
+function normalizeIPA(ipa: string): string {
+  return ipa
+    .replace(/[\/\s\(\)]/g, '') // 슬래시, 공백, 괄호 제거
+    .replace(/[ˈˌ]/g, '') // 강세 기호 제거 (비교 시)
+    .toLowerCase();
+}
+
+/**
+ * 발음 정보에서 품사를 추론하는 헬퍼 함수 (AI meanings와 매칭)
+ *
+ * Free Dictionary API의 phonetics.text(IPA)를 AI meanings의 ipa와 매칭하여
+ * 정확한 품사를 반환합니다. 매칭 실패 시 첫 번째 품사를 반환합니다.
+ *
+ * @param phonetic - Free Dictionary API의 발음 정보
+ * @param meanings - Free Dictionary API의 품사별 의미 배열
+ * @param aiMeanings - AI 분석 결과의 품사별 의미 배열 (IPA 포함)
+ * @returns 추론된 품사 (없으면 undefined)
+ */
+function inferPartOfSpeech(
+  phonetic: Phonetic,
+  meanings: Meaning[],
+  aiMeanings?: { partOfSpeech: string; ipa: string }[]
+): string | undefined {
+  // AI meanings가 있고 phonetic.text가 있으면 IPA 매칭 시도
+  if (aiMeanings && phonetic.text) {
+    const normalizedPhonetic = normalizeIPA(phonetic.text);
+
+    // AI meanings의 각 IPA와 비교
+    for (const aiMeaning of aiMeanings) {
+      const normalizedAiIPA = normalizeIPA(aiMeaning.ipa);
+
+      // 정규화된 IPA가 일치하면 해당 품사 반환
+      if (normalizedPhonetic === normalizedAiIPA) {
+        return aiMeaning.partOfSpeech;
+      }
+    }
+  }
+
+  // 매칭 실패 시 Free Dictionary API의 첫 번째 품사 반환 (폴백)
+  return meanings[0]?.partOfSpeech;
 }
 
 /**
@@ -35,65 +83,86 @@ export async function SearchResult({ word }: SearchResultProps) {
     return <ErrorMessage message={errorMessage} />;
   }
 
-  // 이제 result.data가 타입 안전하게 접근 가능
-  const wordData = convertToWordData(result.data);
+  // AI 분석 데이터 가져오기 (비동기)
+  // Phase 1: AI 전용 음절 분리 시스템으로 전환
+  // POST 방식으로 phonetics 및 품사 정보 포함
+  let analysis: WordAnalysisResponse | null = null;
+  try {
+    // Free Dictionary API의 정의와 예문, 품사 추출
+    const definitions: string[] = [];
+    const examples: string[] = [];
+    const partsOfSpeech = new Set<string>();
 
-  // 데이터 변환 실패 시 에러 처리
-  if (!wordData) {
-    return <ErrorMessage message="데이터를 처리할 수 없습니다." />;
+    result.data[0]?.meanings?.forEach((meaning) => {
+      partsOfSpeech.add(meaning.partOfSpeech);
+      meaning.definitions.forEach((def) => {
+        definitions.push(def.definition);
+        if (def.example) {
+          examples.push(def.example);
+        }
+      });
+    });
+
+    // phonetics에 품사 정보 매핑
+    // Free Dictionary API는 phonetics에 partOfSpeech를 제공하지 않으므로
+    // meanings의 품사 정보를 기반으로 AI가 판단하도록 함
+    const phonetics = result.data.flatMap((entry) =>
+      entry.phonetics?.map((p) => ({
+        text: p.text,
+        audio: p.audio,
+        // 품사 정보는 AI 프롬프트에서 meanings 기반으로 추론
+      })) || []
+    ).filter((p) => p.text); // text가 있는 것만 포함
+
+    // POST 요청으로 phonetics 및 품사 정보 포함
+    const analysisResponse = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/words/analyze`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          word,
+          definitions: definitions.slice(0, 3), // 최대 3개
+          examples: examples.slice(0, 2), // 최대 2개
+          phonetics: phonetics,
+        }),
+        next: { revalidate: 3600 }, // 1시간 캐싱
+      }
+    );
+
+    if (analysisResponse.ok) {
+      const analysisJson = await analysisResponse.json();
+      analysis = analysisJson.success ? analysisJson.data : null;
+    }
+  } catch (error) {
+    console.error('AI analysis fetch error:', error);
+    // AI 분석 실패 시 기존 기능에 영향 없음
   }
 
-  const audioUrl = result.data[0]?.phonetics?.[0]?.audio;
+  // phoneticsWithAudio 준비 (발음 재생용)
+  // AI 분석 이후에 준비하여 meanings의 IPA와 매칭
+  const phoneticsWithAudio = result.data.flatMap((entry) =>
+    entry.phonetics?.map((p) => ({
+      text: p.text,
+      audio: p.audio,
+      partOfSpeech: inferPartOfSpeech(p, entry.meanings, analysis?.meanings),
+    })) || []
+  ).filter((p) => p.text);
 
   return (
     <>
       {/* 검색 성공 시 검색 기록에 추가 */}
       <SearchTracker word={word} />
 
-      <div className="space-y-6">
-        {/* 단어 정보 카드 */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-3xl">{wordData.word}</CardTitle>
-              <PlayButton
-                text={wordData.word}
-                audioUrl={audioUrl}
-              />
-            </div>
-            {wordData.phonetic && (
-              <p className="text-muted-foreground">{wordData.phonetic}</p>
-            )}
-          </CardHeader>
-        </Card>
-
-        {/* 품사별 정의 목록 */}
-        {wordData.meanings.map((meaning, idx) => (
-          <Card key={idx}>
-            <CardHeader>
-              <CardTitle className="text-xl capitalize">
-                {meaning.partOfSpeech}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ol className="list-decimal list-inside space-y-3">
-                {meaning.definitions.map((def, defIdx) => (
-                  <li key={defIdx} className="space-y-1">
-                    <p>{def.definition}</p>
-                    {def.example ? (
-                      <ExampleItem example={def.example} />
-                    ) : (
-                      <p className="text-sm text-muted-foreground ml-5">
-                        예문 없음
-                      </p>
-                    )}
-                  </li>
-                ))}
-              </ol>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {/* 통합 단어 분석 (헤더 + 형태소/어원 + 품사별 상세 정보) */}
+      <WordSearchResult
+        analysis={analysis}
+        isLoading={false}
+        word={word}
+        phoneticsWithAudio={phoneticsWithAudio}
+      />
     </>
   );
 }

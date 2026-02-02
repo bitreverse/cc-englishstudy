@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSpeech } from '@/hooks/useSpeech';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, Volume2 } from 'lucide-react';
@@ -28,12 +28,8 @@ interface ExampleItemProps {
  */
 export function ExampleItem({ example }: ExampleItemProps) {
   const { isPlaying, play } = useSpeech();
-  const [isSupported, setIsSupported] = useState(true);
-
-  // 클라이언트에서 TTS 지원 여부 체크
-  useEffect(() => {
-    setIsSupported(isSpeechSupported());
-  }, []);
+  // 클라이언트에서 TTS 지원 여부 체크 (lazy 초기화)
+  const [isSupported] = useState(() => isSpeechSupported());
 
   const handlePlay = () => {
     play(example);

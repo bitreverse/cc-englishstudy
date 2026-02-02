@@ -28,6 +28,8 @@ export interface Phonetic {
   text?: string;
   /** 음성 파일 URL - 선택적 (빈 문자열일 수 있음) */
   audio?: string;
+  /** 품사 정보 (선택적) */
+  partOfSpeech?: string;
 }
 
 /**
@@ -94,3 +96,9 @@ export interface RecentSearch {
 export type SearchResult =
   | { success: true; data: DictionaryResponse[] }
   | { success: false; error: 'NOT_FOUND' | 'NETWORK_ERROR' };
+
+// Phase 1: 단어 구조 분석 + 한글 번역 타입
+export * from './syllable';
+export * from './morpheme';
+export * from './meaning';
+export * from './ai';
