@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PronunciationPlayer } from '@/components/word/PronunciationPlayer';
+import { SyllablePlayer } from '@/components/word/SyllablePlayer';
 import type { WordAnalysisResponse } from '@/types';
 
 /**
@@ -166,12 +166,13 @@ export function WordSearchResult({
                 {idx + 1}. {capitalize(meaning.partOfSpeech)}
               </CardTitle>
 
-              {/* OpenAI TTS 발음 재생 (전체 + Phonics) */}
-              {meaning.ipa && (
-                <PronunciationPlayer
+              {/* 음절 발음 재생 (Syllable 구조) */}
+              {meaning.ipa && syllables.syllableDetails && syllables.syllableDetails.length > 0 && (
+                <SyllablePlayer
                   word={word}
                   partOfSpeech={meaning.partOfSpeech}
-                  ipa={meaning.ipa}
+                  fullIpa={meaning.ipa}
+                  syllables={syllables.syllableDetails}
                 />
               )}
             </CardHeader>

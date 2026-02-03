@@ -38,7 +38,12 @@ Return a JSON object with the following structure:
     "syllables": ["syl", "la", "bles"],
     "formatted": "syl·la·bles",
     "count": 3,
-    "source": "ai"
+    "source": "ai",
+    "syllableDetails": [
+      { "text": "syl", "ipa": "sɪl" },
+      { "text": "la", "ipa": "lə" },
+      { "text": "bles", "ipa": "bəlz" }
+    ]
   },
   "morpheme": {
     "word": "${word}",
@@ -66,6 +71,9 @@ Requirements:
 
 1. **Syllabification**: Divide the word into syllables as a single result (not an array per part of speech).
    - Return ONE syllables object for the entire word
+   - IMPORTANT: Include "syllableDetails" array with both text and IPA for EACH syllable
+   - For heteronyms, use the FIRST pronunciation's syllable structure (e.g., permit noun: per /ˈpɜːr/, mit /mɪt/)
+   - Each syllable's IPA should match the pronunciation pattern (include stress markers in first syllable if needed)
 
 2. **Morpheme Analysis**: Break down into prefixes, root, and suffixes.
    - Include "origin" field for each part (e.g., "라틴어 per-", "그리스어 logos")
