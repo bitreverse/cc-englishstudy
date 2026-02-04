@@ -106,6 +106,7 @@ function getFallbackAnalysis(request: WordAnalysisRequest): WordAnalysisResponse
     formatted: '',
     count: 0,
     source: 'ai',
+    syllableDetails: [], // 필수 속성 추가 (빈 배열)
   };
 
   // meanings를 빈 배열로 반환
