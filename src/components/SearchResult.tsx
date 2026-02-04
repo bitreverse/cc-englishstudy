@@ -121,8 +121,17 @@ export async function SearchResult({ word }: SearchResultProps) {
     console.log('[SearchResult] Examples:', examples.length);
     console.log('[SearchResult] Phonetics:', phonetics.length);
 
+    // Server Component에서는 절대 URL이 필요함 (내부 fetch)
+    // 1. NEXT_PUBLIC_BASE_URL 환경 변수 우선 사용
+    // 2. Vercel 배포 환경: VERCEL_URL 사용
+    // 3. 로컬 개발 환경: localhost:3000 폴백
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+
+    console.log('[SearchResult] Base URL:', baseUrl);
+
     const analysisResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/words/analyze`,
+      `${baseUrl}/api/words/analyze`,
       {
         method: 'POST',
         headers: {
