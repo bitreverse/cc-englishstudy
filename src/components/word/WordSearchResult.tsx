@@ -98,6 +98,31 @@ export function WordSearchResult({
    */
   const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
 
+  /**
+   * 전체 발음 개수 및 발음 순서 인덱스 맵핑
+   *
+   * 고유한 IPA 개수로 발음의 개수를 판단하고, 각 IPA의 순서를 추적합니다.
+   * - 1개: 단일 발음 (검정색)
+   * - 2개 이상: 다중 발음/Heteronym (발음 순서별 색상)
+   *
+   * 예:
+   * - computer: 2개의 meanings이지만 IPA가 동일 → 단일 발음, index=0
+   * - permit: 2개의 meanings이고 IPA가 다름 → 다중 발음
+   *   - Noun /ˈpɜːrmɪt/: index=0 (파란색)
+   *   - Verb /pərˈmɪt/: index=1 (녹색)
+   */
+  const uniqueIPAs: string[] = [];
+  const ipaIndexMap = new Map<string, number>();
+
+  meanings.forEach((m) => {
+    if (!ipaIndexMap.has(m.ipa)) {
+      ipaIndexMap.set(m.ipa, uniqueIPAs.length);
+      uniqueIPAs.push(m.ipa);
+    }
+  });
+
+  const totalPronunciations = uniqueIPAs.length;
+
   return (
     <div className="space-y-4 md:space-y-6">
       {/* 헤더 영역: 단어 + 음절 */}
@@ -159,6 +184,9 @@ export function WordSearchResult({
 
       {/* 품사별 섹션 */}
       {meanings.map((meaning, idx) => {
+        // 현재 meaning의 발음 순서 인덱스 (색상 결정용)
+        const pronunciationIndex = ipaIndexMap.get(meaning.ipa) || 0;
+
         return (
           <Card key={idx}>
             <CardHeader>
@@ -167,12 +195,14 @@ export function WordSearchResult({
               </CardTitle>
 
               {/* 음절 발음 재생 (Syllable 구조) */}
-              {meaning.ipa && syllables.syllableDetails && syllables.syllableDetails.length > 0 && (
+              {meaning.ipa && (meaning.syllableDetails || syllables.syllableDetails) && (
                 <SyllablePlayer
                   word={word}
                   partOfSpeech={meaning.partOfSpeech}
                   fullIpa={meaning.ipa}
-                  syllables={syllables.syllableDetails}
+                  syllables={meaning.syllableDetails || syllables.syllableDetails}
+                  totalPronunciations={totalPronunciations}
+                  pronunciationIndex={pronunciationIndex}
                 />
               )}
             </CardHeader>
@@ -180,14 +210,14 @@ export function WordSearchResult({
               {/* 영어 정의 */}
               <div>
                 <p className="text-sm font-medium text-foreground">
-                  (EN) {meaning.definitionEn}
+                  <strong>(EN)</strong> {meaning.definitionEn}
                 </p>
               </div>
 
               {/* 한국어 정의 */}
               <div>
                 <p className="text-sm text-muted-foreground">
-                  (KR) {meaning.definitionKo}
+                  <strong>(KR)</strong> {meaning.definitionKo}
                 </p>
               </div>
 

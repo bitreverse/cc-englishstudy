@@ -31,6 +31,14 @@ class CostTracker {
       input: 3.0,
       output: 15.0,
     },
+    'gemini-2.0-flash-exp': {
+      input: 0.10,
+      output: 0.40,
+    },
+    'gemini-1.5-flash': {
+      input: 0.075,
+      output: 0.30,
+    },
   };
 
   /**

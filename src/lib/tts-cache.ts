@@ -2,9 +2,9 @@
  * TTS 오디오 캐시 시스템 (서버 측)
  *
  * 파일시스템 기반 영구 캐시와 메모리 캐시를 조합하여
- * OpenAI TTS API 호출을 최소화합니다.
+ * Google Cloud TTS API 호출을 최소화합니다.
  *
- * 캐시 키: word + partOfSpeech (heteronym 구분)
+ * 캐시 키: word + ipa + phoneme (IPA 기반 완벽한 heteronym 구분)
  * 저장 형식: MP3 파일
  *
  * @module tts-cache
@@ -22,10 +22,11 @@ import path from 'path';
  *
  * v1: context(예문)를 TTS 입력으로 사용 (잘못된 동작)
  * v2: 캐리어 문장만 사용 ("The word.", "To word.")
+ * v3: Google Cloud TTS + SSML <phoneme> 태그 + IPA 기반 캐시
  *
  * 주의: tts-client.ts의 CACHE_VERSION과 동일한 값을 유지해야 합니다.
  */
-const CACHE_VERSION = 2;
+const CACHE_VERSION = 3;
 
 /**
  * TTS 캐시 디렉토리 경로
@@ -53,23 +54,22 @@ const MAX_MEMORY_ENTRIES = 100;
 const reportedItems = new Set<string>();
 
 /**
- * 캐시 키 생성
+ * 캐시 키 생성 (v3: IPA 기반)
  *
- * 단어와 품사를 조합하여 고유한 캐시 키를 생성합니다.
- * heteronym의 경우 동일 단어라도 품사에 따라 다른 캐시를 사용합니다.
+ * 단어와 IPA 발음 기호를 조합하여 고유한 캐시 키를 생성합니다.
+ * Heteronym의 경우 동일 단어라도 IPA에 따라 다른 캐시를 사용합니다.
  *
  * @param word - 단어
- * @param partOfSpeech - 품사 (선택, heteronym 구분용)
+ * @param ipa - IPA 발음 기호 (필수, heteronym 완벽 구분)
  * @param phoneme - 개별 음소 (선택, Phonics별 발음용)
  * @returns 해시된 캐시 키
  */
 function generateCacheKey(
   word: string,
-  partOfSpeech?: string,
+  ipa: string,
   phoneme?: string
 ): string {
-  const parts = [`v${CACHE_VERSION}`, word.toLowerCase().trim()];
-  if (partOfSpeech) parts.push(partOfSpeech.toLowerCase());
+  const parts = [`v${CACHE_VERSION}`, word.toLowerCase().trim(), ipa.trim()];
   if (phoneme) parts.push(`phoneme:${phoneme}`);
   const raw = parts.join(':');
   return createHash('md5').update(raw).digest('hex');
@@ -124,21 +124,21 @@ function pruneMemoryCache(): void {
  */
 export class TTSCache {
   /**
-   * 캐시에서 오디오 데이터 조회
+   * 캐시에서 오디오 데이터 조회 (v3: IPA 기반)
    *
    * 메모리 캐시 -> 파일시스템 캐시 순으로 조회합니다.
    *
    * @param word - 단어
-   * @param partOfSpeech - 품사 (선택)
+   * @param ipa - IPA 발음 기호 (필수)
    * @param phoneme - 개별 음소 (선택)
    * @returns 캐시된 MP3 Buffer, 없으면 null
    */
   static async get(
     word: string,
-    partOfSpeech?: string,
+    ipa: string,
     phoneme?: string
   ): Promise<Buffer | null> {
-    const key = generateCacheKey(word, partOfSpeech, phoneme);
+    const key = generateCacheKey(word, ipa, phoneme);
 
     // 신고된 항목은 캐시에서 제외
     if (reportedItems.has(key)) {
@@ -168,22 +168,22 @@ export class TTSCache {
   }
 
   /**
-   * 캐시에 오디오 데이터 저장
+   * 캐시에 오디오 데이터 저장 (v3: IPA 기반)
    *
    * 파일시스템과 메모리 캐시 모두에 저장합니다.
    *
    * @param word - 단어
    * @param buffer - MP3 오디오 데이터
-   * @param partOfSpeech - 품사 (선택)
+   * @param ipa - IPA 발음 기호 (필수)
    * @param phoneme - 개별 음소 (선택)
    */
   static async set(
     word: string,
     buffer: Buffer,
-    partOfSpeech?: string,
+    ipa: string,
     phoneme?: string
   ): Promise<void> {
-    const key = generateCacheKey(word, partOfSpeech, phoneme);
+    const key = generateCacheKey(word, ipa, phoneme);
 
     // 신고 상태 해제 (재생성 완료)
     reportedItems.delete(key);
@@ -204,15 +204,15 @@ export class TTSCache {
    * 신고된 항목은 다음 요청 시 캐시를 무시하고 재생성합니다.
    *
    * @param word - 단어
-   * @param partOfSpeech - 품사 (선택)
+   * @param ipa - IPA 발음 기호 (필수)
    * @param phoneme - 개별 음소 (선택)
    */
   static report(
     word: string,
-    partOfSpeech?: string,
+    ipa: string,
     phoneme?: string
   ): void {
-    const key = generateCacheKey(word, partOfSpeech, phoneme);
+    const key = generateCacheKey(word, ipa, phoneme);
     reportedItems.add(key);
 
     // 메모리 캐시에서도 제거
@@ -225,15 +225,15 @@ export class TTSCache {
    * 파일시스템과 메모리 캐시 모두에서 제거합니다.
    *
    * @param word - 단어
-   * @param partOfSpeech - 품사 (선택)
+   * @param ipa - IPA 발음 기호 (필수)
    * @param phoneme - 개별 음소 (선택)
    */
   static async delete(
     word: string,
-    partOfSpeech?: string,
+    ipa: string,
     phoneme?: string
   ): Promise<void> {
-    const key = generateCacheKey(word, partOfSpeech, phoneme);
+    const key = generateCacheKey(word, ipa, phoneme);
 
     // 메모리 캐시 삭제
     memoryCache.delete(key);

@@ -33,9 +33,39 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# Google Cloud Service Account 키 (절대 커밋하지 말 것!)
+google-service-account.json
+*-service-account.json
+english-study-app-486220-d18856a563c9.json
+
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# TTS 오디오 캐시
+/.tts-cache/
+
+# 테스트 출력 파일
+test-output.mp3
+test-*.mp3
+
+# 테스트 스크립트
+test-*.js
+
+# Playwright MCP 테스트 파일
+.playwright-mcp/
+
+# 테스트 결과 문서
+TEST_*.md
+*_TEST*.md
+*_SUMMARY.md
+
+# 로그 파일
+*.log
+nul
+
+# MCP 서버 데이터 (선택적)
+shrimp_data/

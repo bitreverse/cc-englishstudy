@@ -12,7 +12,7 @@ import { MeaningEntrySchema } from './meaning';
  *
  * 지원하는 AI API 제공자를 정의합니다.
  */
-export type AIProvider = 'openai' | 'anthropic';
+export type AIProvider = 'gemini' | 'openai' | 'anthropic';
 
 /**
  * AI 프로바이더 설정 타입
@@ -20,9 +20,9 @@ export type AIProvider = 'openai' | 'anthropic';
  * AI API 호출에 필요한 설정 정보를 포함합니다.
  */
 export interface AIProviderConfig {
-  /** AI 프로바이더 ('openai' 또는 'anthropic') */
+  /** AI 프로바이더 ('gemini', 'openai', 'anthropic') */
   provider: AIProvider;
-  /** 사용할 모델 (예: 'gpt-4o-mini', 'claude-3-5-haiku-20241022') */
+  /** 사용할 모델 (예: 'gemini-2.0-flash-exp', 'gpt-4o-mini', 'claude-3-5-haiku-20241022') */
   model: string;
   /** API 키 */
   apiKey: string;

@@ -63,17 +63,23 @@ export async function analyzeWord(
 
   // 4. AI API 호출
   try {
+    console.log(`[Word Analysis Service] AI API 호출 시작: ${request.word}`);
     const aiClient = createAIClient();
+    console.log(`[Word Analysis Service] AI Client 생성됨 - Provider: ${aiClient.provider}`);
+
     const result = await aiClient.analyzeWord(request);
 
     // 캐싱 (90일 TTL)
     AnalysisCache.set(request.word, result);
 
     console.log(`[AI Success] ${request.word} - Provider: ${aiClient.provider}`);
+    console.log(`[AI Success] Meanings 개수: ${result.meanings.length}`);
 
     return result;
   } catch (error) {
     console.error(`[AI Error] ${request.word}:`, error);
+    console.error(`[AI Error] 에러 상세:`, error instanceof Error ? error.message : 'Unknown error');
+    console.log(`[Fallback] Fallback 분석 사용: ${request.word}`);
     return getFallbackAnalysis(request);
   }
 }

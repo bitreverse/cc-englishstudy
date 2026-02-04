@@ -22,6 +22,14 @@ export function createAnalysisPrompt(request: WordAnalysisRequest): string {
 
 **CRITICAL REQUIREMENTS:**
 - Use **US IPA only** (not UK IPA). For example: /ˈwɔːtər/ (UK) is WRONG, /ˈwɑːtər/ (US) is CORRECT.
+- **SYLLABLE IPA CONSISTENCY**: The concatenation of syllable IPAs MUST exactly match the full word IPA (including stress markers).
+  - Stress marker (ˈ) should be placed ONLY in the stressed syllable's IPA.
+  - Example: permit (Noun) /ˈpɜːrmɪt/
+    - syllableDetails: [{"text": "per", "ipa": "ˈpɜːr"}, {"text": "mit", "ipa": "mɪt"}]
+    - Verification: "ˈpɜːr" + "mɪt" = "ˈpɜːrmɪt" ✓
+  - Example: permit (Verb) /pərˈmɪt/
+    - syllableDetails: [{"text": "per", "ipa": "pər"}, {"text": "mit", "ipa": "ˈmɪt"}]
+    - Verification: "pər" + "ˈmɪt" = "pərˈmɪt" ✓
 - ${
     hasHeteronyms
       ? `**HETERONYM DETECTED**: This word has ${heteronymGroups.length} different pronunciations by part of speech:
@@ -58,6 +66,9 @@ Return a JSON object with the following structure:
     {
       "partOfSpeech": "noun",
       "ipa": "/ˈwɜrd/ (US IPA)",
+      "syllableDetails": [
+        { "text": "word", "ipa": "ˈwɜrd" }
+      ],
       "definitionEn": "English definition",
       "definitionKo": "한국어 정의",
       "examples": [{ "en": "English example", "ko": "한국어 예문" }],
@@ -73,7 +84,11 @@ Requirements:
    - Return ONE syllables object for the entire word
    - IMPORTANT: Include "syllableDetails" array with both text and IPA for EACH syllable
    - For heteronyms, use the FIRST pronunciation's syllable structure (e.g., permit noun: per /ˈpɜːr/, mit /mɪt/)
-   - Each syllable's IPA should match the pronunciation pattern (include stress markers in first syllable if needed)
+   - **CRITICAL**: Concatenating syllable IPAs MUST produce the exact full IPA (with stress markers)
+     - Place stress marker (ˈ) ONLY in the stressed syllable
+     - Verify: syllableIPAs.join('') === fullIPA (without slashes)
+     - Example: record (Verb) /rɪˈkɔːrd/ → [{"text": "re", "ipa": "rɪ"}, {"text": "cord", "ipa": "ˈkɔːrd"}]
+     - Verification: "rɪ" + "ˈkɔːrd" = "rɪˈkɔːrd" ✓
 
 2. **Morpheme Analysis**: Break down into prefixes, root, and suffixes.
    - Include "origin" field for each part (e.g., "라틴어 per-", "그리스어 logos")
@@ -83,6 +98,12 @@ Requirements:
 3. **Meanings (품사별 상세 정보)**: For EACH part of speech, provide:
    - partOfSpeech: Part of speech (e.g., "noun", "verb")
    - ipa: **US IPA notation ONLY** (e.g., "/ˈwɜrd/")
+   - syllableDetails: **CRITICAL** - Syllable breakdown for THIS specific pronunciation
+     * MUST match the syllable structure in syllables object for first pronunciation
+     * For heteronyms with different pronunciations, provide DIFFERENT syllableDetails
+     * Concatenating syllable IPAs MUST produce the exact full IPA
+     * Example (permit noun /ˈpɜːrmɪt/): [{"text": "per", "ipa": "ˈpɜːr"}, {"text": "mit", "ipa": "mɪt"}]
+     * Example (permit verb /pərˈmɪt/): [{"text": "per", "ipa": "pər"}, {"text": "mit", "ipa": "ˈmɪt"}]
    - definitionEn: English definition
    - definitionKo: Korean translation of the definition
    - examples: Array of example sentences with translations [{ en: "...", ko: "..." }]

@@ -45,6 +45,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    console.log('[API Route GET] ===== 분석 요청 =====');
+    console.log('[API Route GET] 단어:', word);
+
     // 1. 통합 분석 요청 준비
     const analysisRequest: WordAnalysisRequest = {
       word,
@@ -53,6 +56,10 @@ export async function GET(request: NextRequest) {
     // 2. 통합 분석 수행 (캐시 우선 → AI API → 폴백)
     const result = await analyzeWord(analysisRequest);
 
+    console.log('[API Route GET] 분석 완료');
+    console.log('[API Route GET] Morpheme source:', result.morpheme.source);
+    console.log('[API Route GET] Meanings 개수:', result.meanings.length);
+
     // 3. 성공 응답
     return NextResponse.json({
       success: true,
@@ -60,7 +67,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     // 예상치 못한 에러 처리
-    console.error('Analysis error:', error);
+    console.error('[API Route GET] ❌ Analysis error:', error);
 
     return NextResponse.json(
       {
@@ -94,6 +101,12 @@ export async function POST(request: NextRequest) {
       }>;
     };
 
+    console.log('[API Route POST] ===== 분석 요청 =====');
+    console.log('[API Route POST] 단어:', body.word);
+    console.log('[API Route POST] Definitions:', body.definitions?.length || 0);
+    console.log('[API Route POST] Examples:', body.examples?.length || 0);
+    console.log('[API Route POST] Phonetics:', body.phonetics?.length || 0);
+
     // 파라미터 검증
     if (!body.word) {
       return NextResponse.json(
@@ -120,12 +133,16 @@ export async function POST(request: NextRequest) {
 
     const result = await analyzeWord(analysisRequest);
 
+    console.log('[API Route POST] 분석 완료');
+    console.log('[API Route POST] Morpheme source:', result.morpheme.source);
+    console.log('[API Route POST] Meanings 개수:', result.meanings.length);
+
     return NextResponse.json({
       success: true,
       data: result,
     });
   } catch (error) {
-    console.error('Analysis error:', error);
+    console.error('[API Route POST] ❌ Analysis error:', error);
 
     return NextResponse.json(
       {

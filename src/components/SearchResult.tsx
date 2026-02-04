@@ -115,6 +115,12 @@ export async function SearchResult({ word }: SearchResultProps) {
     ).filter((p) => p.text); // text가 있는 것만 포함
 
     // POST 요청으로 phonetics 및 품사 정보 포함
+    console.log('[SearchResult] ===== AI 분석 요청 시작 =====');
+    console.log('[SearchResult] 단어:', word);
+    console.log('[SearchResult] Definitions:', definitions.length);
+    console.log('[SearchResult] Examples:', examples.length);
+    console.log('[SearchResult] Phonetics:', phonetics.length);
+
     const analysisResponse = await fetch(
       `${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/words/analyze`,
       {
@@ -128,16 +134,32 @@ export async function SearchResult({ word }: SearchResultProps) {
           examples: examples.slice(0, 2), // 최대 2개
           phonetics: phonetics,
         }),
-        next: { revalidate: 3600 }, // 1시간 캐싱
+        cache: 'no-store', // 개발 중에는 캐시 비활성화 (배포 시 next: { revalidate: 3600 } 사용)
       }
     );
 
+    console.log('[SearchResult] 응답 상태:', analysisResponse.status, analysisResponse.statusText);
+
     if (analysisResponse.ok) {
       const analysisJson = await analysisResponse.json();
-      analysis = analysisJson.success ? analysisJson.data : null;
+      console.log('[SearchResult] 응답 JSON success:', analysisJson.success);
+
+      if (analysisJson.success) {
+        analysis = analysisJson.data;
+        console.log('[SearchResult] Analysis meanings 개수:', analysis?.meanings?.length || 0);
+      } else {
+        console.error('[SearchResult] API returned success: false');
+        console.error('[SearchResult] Error:', analysisJson.error);
+      }
+    } else {
+      const errorText = await analysisResponse.text();
+      console.error('[SearchResult] API 요청 실패:', analysisResponse.status);
+      console.error('[SearchResult] Error response:', errorText);
     }
+
+    console.log('[SearchResult] ===== AI 분석 요청 완료 =====');
   } catch (error) {
-    console.error('AI analysis fetch error:', error);
+    console.error('[SearchResult] ❌ AI analysis fetch error:', error);
     // AI 분석 실패 시 기존 기능에 영향 없음
   }
 

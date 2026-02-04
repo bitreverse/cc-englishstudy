@@ -66,12 +66,19 @@ const IPA_CONSONANTS = [
  * 긴 음소가 먼저 매칭되도록 길이 내림차순으로 정렬됩니다.
  */
 const IPA_VOWELS = [
-  'ɜːr', 'iː', 'ɑː', 'ɔː', 'uː', // 장모음 (3-2문자 먼저)
-  'aɪ', 'aʊ', 'eɪ', 'oɪ', 'oʊ', // 이중모음
-  'ɪə', 'eə', 'ʊə', // 중화 이중모음
-  'ər', 'ɜː', // r-colored 모음
-  'i', 'ɪ', 'e', 'ɛ', 'æ', 'ɑ', 'ɒ', 'ɔ', 'o', // 단모음
-  'ʊ', 'u', 'ʌ', 'ə', 'ɜ', // 단모음
+  // R-colored vowels (3문자 - 장모음+r)
+  'ɜːr', 'ɑːr', 'ɔːr', 'iːr', 'uːr',
+  // 장모음 (2문자)
+  'iː', 'ɑː', 'ɔː', 'uː', 'ɜː', 'eː',
+  // 이중모음 (2문자)
+  'aɪ', 'aʊ', 'eɪ', 'oɪ', 'oʊ',
+  // 중화 이중모음 (2문자)
+  'ɪə', 'eə', 'ʊə',
+  // R-colored vowels (2문자 - 단모음+r)
+  'ər', 'ɜr', 'ɑr', 'ɔr', 'ɪr', 'ʊr', 'ɛr',
+  // 단모음 (1문자)
+  'i', 'ɪ', 'e', 'ɛ', 'æ', 'ɑ', 'ɒ', 'ɔ', 'o',
+  'ʊ', 'u', 'ʌ', 'ə', 'ɜ',
 ];
 
 /**
@@ -149,14 +156,23 @@ function splitIPAToPhonemes(ipa: string): string[] {
         phoneme += next;
         i++;
       }
-      // r-colored vowel: ər, ɝ 등의 조합
-      else if (
-        next === 'r' &&
-        phoneme.length === 1 &&
-        'əɜɑɔɪʊ'.includes(phoneme.replace(/[ˈˌ]/g, ''))
-      ) {
-        phoneme += next;
-        i++;
+      // r-colored vowel: 모음 + r 조합 (장모음 포함)
+      // ɜːr, ɑːr, ɔːr, ər, ɑr 등
+      else if (next === 'r') {
+        // 강세 기호를 제거하고 기본 모음만 추출
+        const basePhoneme = phoneme.replace(/[ˈˌ]/g, '');
+        // r-colored vowel이 될 수 있는 모음 패턴
+        // 장모음(ː 포함) 또는 단모음 + r
+        const canBeRColored =
+          'əɜɑɔɪʊɛ'.includes(basePhoneme.replace('ː', '')) ||
+          basePhoneme.match(/^[əɜɑɔɪʊɛ]ː?$/);
+
+        if (canBeRColored) {
+          phoneme += next;
+          i++;
+        } else {
+          break;
+        }
       } else {
         break;
       }
@@ -245,6 +261,7 @@ export function PronunciationPlayer({
     play({
       word,
       partOfSpeech,
+      ipa, // IPA는 필수 파라미터
       phoneme: cleanPhoneme,
     });
   };

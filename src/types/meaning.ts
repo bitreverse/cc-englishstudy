@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import type { SyllableInfo } from './syllable';
+import { SyllableInfoSchema } from './syllable';
 
 /**
  * 예시문 타입
@@ -22,6 +24,8 @@ export interface MeaningEntry {
   partOfSpeech: string;
   /** US IPA 발음 기호 (예: "/pərˈmɪt/") */
   ipa: string;
+  /** 음절 상세 정보 (철자 + IPA), Heteronym의 경우 각 발음마다 다를 수 있음 */
+  syllableDetails?: SyllableInfo[];
   /** 영어 정의 */
   definitionEn: string;
   /** 한국어 정의 */
@@ -52,6 +56,7 @@ export const MeaningExampleSchema = z.object({
 export const MeaningEntrySchema = z.object({
   partOfSpeech: z.string(),
   ipa: z.string(),
+  syllableDetails: z.array(SyllableInfoSchema).optional(),
   definitionEn: z.string(),
   definitionKo: z.string(),
   examples: z.array(MeaningExampleSchema),

@@ -5,7 +5,7 @@
  * 기존 캐시를 무효화하고 재생성을 트리거합니다.
  *
  * POST /api/tts/report
- * Body: { word, partOfSpeech?, phoneme? }
+ * Body: { word, ipa, phoneme? }
  * Response: { success: true }
  *
  * @module api/tts/report
@@ -21,8 +21,8 @@ import { TTSCache } from '@/lib/tts-cache';
 const ReportRequestSchema = z.object({
   /** 신고 대상 단어 */
   word: z.string().min(1).max(100),
-  /** 품사 (선택) */
-  partOfSpeech: z.string().optional(),
+  /** IPA 발음 기호 (필수, 캐시 키 생성용) */
+  ipa: z.string().min(1),
   /** 개별 음소 (선택) */
   phoneme: z.string().max(50).optional(),
 });
@@ -90,16 +90,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { word, partOfSpeech, phoneme } = parsed.data;
+    const { word, ipa, phoneme } = parsed.data;
 
     // 캐시 무효화 (신고 표시)
-    TTSCache.report(word, partOfSpeech, phoneme);
+    TTSCache.report(word, ipa, phoneme);
 
     // 파일시스템 캐시도 삭제
-    await TTSCache.delete(word, partOfSpeech, phoneme);
+    await TTSCache.delete(word, ipa, phoneme);
 
     console.log(
-      `[TTS Report] word="${word}" pos="${partOfSpeech || 'N/A'}" phoneme="${phoneme || 'N/A'}" ip="${ip}"`
+      `[TTS Report] word="${word}" ipa="${ipa}" phoneme="${phoneme || 'N/A'}" ip="${ip}"`
     );
 
     return NextResponse.json({

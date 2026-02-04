@@ -54,6 +54,12 @@ export function createAIClient(config?: Partial<AIProviderConfig>): AIClient {
   const provider = config?.provider || env.AI_PROVIDER;
 
   switch (provider) {
+    case 'gemini': {
+      // Dynamic import to avoid loading unused client
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { GeminiClient } = require('./gemini-client');
+      return new GeminiClient(config);
+    }
     case 'openai': {
       // Dynamic import to avoid loading unused client
       // eslint-disable-next-line @typescript-eslint/no-require-imports

@@ -229,12 +229,27 @@ export async function fetchTTSAudio(
   }
 
   // 2. 서버 API 호출
+  // API 스키마에 맞게 필요한 필드만 전달 (word, ipa, phoneme, skipCache)
+  // partOfSpeech는 클라이언트 측 캐시 키 생성용으로만 사용
+  const apiPayload: {
+    word: string;
+    ipa?: string;
+    phoneme?: string;
+    skipCache?: boolean;
+  } = {
+    word: params.word,
+  };
+
+  if (params.ipa) apiPayload.ipa = params.ipa;
+  if (params.phoneme) apiPayload.phoneme = params.phoneme;
+  if (params.skipCache) apiPayload.skipCache = params.skipCache;
+
   const response = await fetch('/api/tts', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(params),
+    body: JSON.stringify(apiPayload),
   });
 
   if (!response.ok) {
