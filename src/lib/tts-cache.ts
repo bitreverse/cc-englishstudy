@@ -31,9 +31,16 @@ const CACHE_VERSION = 3;
 /**
  * TTS 캐시 디렉토리 경로
  *
- * 프로젝트 루트의 .tts-cache 디렉토리에 MP3 파일 저장
+ * 환경에 따라 다른 경로 사용:
+ * - Vercel (서버리스): /tmp/.tts-cache (쓰기 가능)
+ * - 로컬 환경: .tts-cache (프로젝트 루트)
  */
-const CACHE_DIR = path.join(process.cwd(), '.tts-cache');
+const CACHE_DIR = process.env.VERCEL
+  ? '/tmp/.tts-cache'
+  : path.join(process.cwd(), '.tts-cache');
+
+// 초기화 시 캐시 경로 로그
+console.log('[TTS Cache] 캐시 디렉토리:', CACHE_DIR, `(환경: ${process.env.VERCEL ? 'Vercel' : 'Local'})`);
 
 /**
  * 메모리 캐시 (Buffer 저장)
@@ -89,12 +96,26 @@ function getCacheFilePath(key: string): string {
  * 캐시 디렉토리 초기화
  *
  * 캐시 디렉토리가 없으면 생성합니다.
+ * Vercel 등 읽기 전용 환경에서는 /tmp 사용을 권장합니다.
+ *
+ * @throws 디렉토리 생성 실패 시 (드물게 발생)
  */
 async function ensureCacheDir(): Promise<void> {
   try {
     await fs.access(CACHE_DIR);
   } catch {
-    await fs.mkdir(CACHE_DIR, { recursive: true });
+    try {
+      await fs.mkdir(CACHE_DIR, { recursive: true });
+      console.log('[TTS Cache] 캐시 디렉토리 생성:', CACHE_DIR);
+    } catch (mkdirError) {
+      // 디렉토리 생성 실패 시 상세 에러 로그
+      console.error('[TTS Cache] ❌ 캐시 디렉토리 생성 실패:', CACHE_DIR, mkdirError);
+      throw new Error(
+        `캐시 디렉토리 생성 실패: ${CACHE_DIR}\n` +
+        `에러: ${mkdirError instanceof Error ? mkdirError.message : String(mkdirError)}\n` +
+        `환경: ${process.env.VERCEL ? 'Vercel (서버리스)' : '로컬'}`
+      );
+    }
   }
 }
 
@@ -171,6 +192,7 @@ export class TTSCache {
    * 캐시에 오디오 데이터 저장 (v3: IPA 기반)
    *
    * 파일시스템과 메모리 캐시 모두에 저장합니다.
+   * 파일 저장 실패 시에도 메모리 캐시는 유지됩니다.
    *
    * @param word - 단어
    * @param buffer - MP3 오디오 데이터
@@ -188,10 +210,19 @@ export class TTSCache {
     // 신고 상태 해제 (재생성 완료)
     reportedItems.delete(key);
 
-    // 파일시스템에 저장
-    await ensureCacheDir();
-    const filePath = getCacheFilePath(key);
-    await fs.writeFile(filePath, buffer);
+    // 파일시스템에 저장 (실패 시 메모리 캐시만 사용)
+    try {
+      await ensureCacheDir();
+      const filePath = getCacheFilePath(key);
+      await fs.writeFile(filePath, buffer);
+      console.log('[TTS Cache] 파일 저장 성공:', filePath);
+    } catch (error) {
+      console.warn(
+        '[TTS Cache] ⚠️ 파일 캐시 저장 실패 (메모리 캐시만 사용):',
+        error instanceof Error ? error.message : String(error)
+      );
+      // 파일 저장 실패해도 계속 진행 (메모리 캐시 사용)
+    }
 
     // 메모리 캐시에 저장
     memoryCache.set(key, { buffer, lastAccess: Date.now() });
